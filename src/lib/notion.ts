@@ -28,7 +28,12 @@ export function getDatabaseIds(): Record<string, string> {
 
 function isNotionPage(
   page: unknown
-): page is { id: string; properties: Record<string, unknown>; cover: unknown; created_time?: string } {
+): page is {
+  id: string;
+  properties: Record<string, unknown>;
+  cover: unknown;
+  created_time?: string;
+} {
   return (
     typeof page === 'object' &&
     page !== null &&
@@ -59,14 +64,18 @@ function getSelect(prop: unknown): string {
 
 function getCoverUrl(cover: unknown): string | null {
   if (!cover || typeof cover !== 'object') return null;
-  const c = cover as { type?: string; file?: { url?: string }; external?: { url?: string } };
+  const c = cover as {
+    type?: string;
+    file?: { url?: string };
+    external?: { url?: string };
+  };
   if (c.type === 'file' && c.file?.url) return c.file.url;
   if (c.type === 'external' && c.external?.url) return c.external.url;
   return null;
 }
 
 /**
- * Map Notion page to Post. Uses page.created_time for sorting when available.
+ * Map Notion page to Post.
  */
 function pageToPost(page: {
   id: string;
@@ -75,18 +84,19 @@ function pageToPost(page: {
   created_time?: string;
 }): Post | null {
   const props = page.properties;
+
   const title = getPlainText(props.Title ?? props.title);
   const slug = getPlainText(props.Slug ?? props.slug).trim();
-  if (!slug) return null; // Guard: Skip posts with empty slug
+  if (!slug) return null;
 
   const published = getCheckbox(props.Published ?? props.published);
-  if (!published) return null; // Guard: Strict check for published status
+  if (!published) return null;
 
   const typeRaw = (getSelect(props.Type ?? props.type) || 'feed').toLowerCase();
   const type = ['feed', 'experiment', 'project', 'note'].includes(typeRaw)
     ? (typeRaw as Post['type'])
     : 'feed';
-  const published = getCheckbox(props.Published ?? props.published);
+
   const createdAt = page.created_time ?? new Date().toISOString();
 
   return {
@@ -103,7 +113,6 @@ function pageToPost(page: {
 
 /**
  * Fetch published pages from a Notion database.
- * Filter: Published === true. Sort: created_time descending.
  */
 export async function fetchDatabasePages(databaseId: string): Promise<Post[]> {
   if (!databaseId || !token) return [];
@@ -119,27 +128,12 @@ export async function fetchDatabasePages(databaseId: string): Promise<Post[]> {
     for (const page of results) {
       if (isNotionPage(page)) {
         const post = pageToPost(page);
-        if (post?.published) posts.push(post);
+        if (post) posts.push(post);
       }
     }
     return posts;
   } catch {
-    try {
-      const { results } = await notion.databases.query({
-        database_id: databaseId,
-        sorts: [{ timestamp: 'created_time', direction: 'descending' }],
-      });
-      const posts: Post[] = [];
-      for (const page of results) {
-        if (isNotionPage(page)) {
-          const post = pageToPost(page);
-          if (post?.published) posts.push(post);
-        }
-      }
-      return posts;
-    } catch {
-      return [];
-    }
+    return [];
   }
 }
 
@@ -156,40 +150,31 @@ async function fetchBlockChildren(blockId: string): Promise<NotionBlock[]> {
     });
 
     for (const block of response.results) {
-      const b = block as {
-        id: string;
-        type: string;
-        paragraph?: { rich_text: Array<{ plain_text: string; href?: string | null }> };
-        heading_1?: { rich_text: Array<{ plain_text: string; href?: string | null }> };
-        heading_2?: { rich_text: Array<{ plain_text: string; href?: string | null }> };
-        heading_3?: { rich_text: Array<{ plain_text: string; href?: string | null }> };
-        bulleted_list_item?: { rich_text: Array<{ plain_text: string; href?: string | null }> };
-        numbered_list_item?: { rich_text: Array<{ plain_text: string; href?: string | null }> };
-        image?: { file?: { url: string }; external?: { url: string }; caption: unknown[] };
-        video?: { file?: { url: string }; external?: { url: string }; caption: unknown[] };
-        embed?: { url: string };
-        bookmark?: { url: string };
-        has_children?: boolean;
-      };
+      const b = block as any;
 
-      const richText = (b.paragraph ?? b.heading_1 ?? b.heading_2 ?? b.heading_3 ?? b.bulleted_list_item ?? b.numbered_list_item)?.rich_text;
-      const plainText = richText?.map((t) => t.plain_text).join('') ?? '';
+      const richText =
+        b.paragraph?.rich_text ??
+        b.heading_1?.rich_text ??
+        b.heading_2?.rich_text ??
+        b.heading_3?.rich_text ??
+        b.bulleted_list_item?.rich_text ??
+        b.numbered_list_item?.rich_text;
+
+      const plainText = richText?.map((t: any) => t.plain_text).join('') ?? '';
 
       const normalized: NotionBlock = {
         id: b.id,
         type: b.type,
         plainText: plainText || undefined,
-        richText: richText as NotionBlock['richText'],
+        richText,
       };
 
       if (b.type === 'image') {
         normalized.url = b.image?.file?.url ?? b.image?.external?.url;
-        normalized.caption = (b.image?.caption as Array<{ plain_text?: string }>)?.[0]?.plain_text;
       } else if (b.type === 'video') {
         normalized.url = b.video?.file?.url ?? b.video?.external?.url;
-        normalized.caption = (b.video?.caption as Array<{ plain_text?: string }>)?.[0]?.plain_text;
       } else if (b.type === 'embed' || b.type === 'bookmark') {
-        normalized.url = (b.embed ?? b.bookmark)?.url;
+        normalized.url = b.embed?.url ?? b.bookmark?.url;
       }
 
       if (b.has_children) {
@@ -220,8 +205,10 @@ export async function fetchPageById(pageId: string): Promise<Post | null> {
   try {
     const page = await notion.pages.retrieve({ page_id: pageId });
     if (!isNotionPage(page)) return null;
+
     const post = pageToPost(page);
     if (!post) return null;
+
     post.content = await fetchPageContent(pageId);
     return post;
   } catch {
