@@ -92,27 +92,28 @@ function pageToPost(page: {
   const slug = getPlainText(props.Slug).trim();
   if (!slug) return null;
 
+  // HARD GATE 1 — must be explicitly published
   const published = getCheckbox(props.Published);
   if (!published) return null;
 
+  // HARD GATE 2 — must have a valid type
   const typeRaw = getSelect(props.Type).toLowerCase();
-  const type = ['feed', 'experiment', 'project', 'note'].includes(typeRaw)
-    ? (typeRaw as Post['type'])
-    : null;
-
-  if (!type) return null;
+  if (!['feed', 'experiment', 'project', 'note'].includes(typeRaw)) {
+    return null;
+  }
 
   return {
     id: page.id,
     title: title || 'Untitled',
     slug,
-    type,
+    type: typeRaw as Post['type'],
     published: true,
     createdAt: page.created_time ?? new Date().toISOString(),
     cover: getCoverUrl(page.cover),
-    content: [],
+    content: [], // filled only by fetchPageById
   };
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Database queries */
@@ -125,8 +126,6 @@ export async function fetchDatabasePages(
   if (!databaseId || !token) return [];
 
   try {
-    console.error('[NOTION] Query DB:', databaseId, 'Type:', type);
-
     const { results } = await notion.databases.query({
       database_id: databaseId,
       filter: {
@@ -136,17 +135,19 @@ export async function fetchDatabasePages(
       sorts: [{ timestamp: 'created_time', direction: 'descending' }],
     });
 
-    console.error('[NOTION] Results count:', results.length);
-
     return results
       .filter(isNotionPage)
       .map(pageToPost)
-      .filter((p): p is Post => Boolean(p) && p.type === type);
+      .filter(
+        (post): post is Post =>
+          Boolean(post) && post.type === type
+      );
   } catch (err) {
     console.error('[NOTION QUERY ERROR]', err);
     return [];
   }
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Block fetching */
@@ -225,5 +226,6 @@ export async function fetchPageById(pageId: string): Promise<Post | null> {
     return null;
   }
 }
+
 
 export { notion };
