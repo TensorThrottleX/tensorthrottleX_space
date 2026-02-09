@@ -25,7 +25,7 @@ export async function getAllPosts(): Promise<Post[]> {
 }
 
 /**
- * Fetch posts filtered by type (feed | experiment | project | note).
+ * Fetch posts filtered by type.
  */
 export async function getPostsByType(type: PostType): Promise<Post[]> {
   const ids = getDatabaseIds();
@@ -50,14 +50,12 @@ export async function getPostsByType(type: PostType): Promise<Post[]> {
 
 /**
  * Get a single post by slug.
- * Loads from all DBs, finds match, then loads full content.
  */
 export async function getPostBySlug(slug: string): Promise<Post | null> {
   const all = await getAllPosts();
   const post = all.find((p) => p.slug === slug);
   if (!post) return null;
 
-  // fetchPageById already loads content
   return fetchPageById(post.id);
 }
 
