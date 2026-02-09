@@ -1,22 +1,18 @@
-import type { Post, PostType } from '@/types';
+﻿import type { Post, PostType } from '@/types';
 import {
   fetchDatabasePages,
   fetchPageById,
   getDatabaseIds,
 } from './notion';
 
-/**
- * Fetch all published posts from all configured Notion databases,
- * normalized to a single list, sorted by createdAt desc.
- */
 export async function getAllPosts(): Promise<Post[]> {
   const ids = getDatabaseIds();
 
   const [feed, experiments, projects, notes] = await Promise.all([
-    ids.feed ? fetchDatabasePages(ids.feed, 'feed') : Promise.resolve([]),
-    ids.experiments ? fetchDatabasePages(ids.experiments, 'experiment') : Promise.resolve([]),
-    ids.projects ? fetchDatabasePages(ids.projects, 'project') : Promise.resolve([]),
-    ids.notes ? fetchDatabasePages(ids.notes, 'note') : Promise.resolve([]),
+    ids.feed ? fetchDatabasePages(ids.feed, 'feed') : [],
+    ids.experiments ? fetchDatabasePages(ids.experiments, 'experiment') : [],
+    ids.projects ? fetchDatabasePages(ids.projects, 'project') : [],
+    ids.notes ? fetchDatabasePages(ids.notes, 'note') : [],
   ]);
 
   return [...feed, ...experiments, ...projects, ...notes].sort(
@@ -24,9 +20,6 @@ export async function getAllPosts(): Promise<Post[]> {
   );
 }
 
-/**
- * Fetch posts filtered by type.
- */
 export async function getPostsByType(type: PostType): Promise<Post[]> {
   const ids = getDatabaseIds();
 
@@ -34,13 +27,9 @@ export async function getPostsByType(type: PostType): Promise<Post[]> {
     case 'feed':
       return ids.feed ? fetchDatabasePages(ids.feed, 'feed') : [];
     case 'experiment':
-      return ids.experiments
-        ? fetchDatabasePages(ids.experiments, 'experiment')
-        : [];
+      return ids.experiments ? fetchDatabasePages(ids.experiments, 'experiment') : [];
     case 'project':
-      return ids.projects
-        ? fetchDatabasePages(ids.projects, 'project')
-        : [];
+      return ids.projects ? fetchDatabasePages(ids.projects, 'project') : [];
     case 'note':
       return ids.notes ? fetchDatabasePages(ids.notes, 'note') : [];
     default:
@@ -48,9 +37,6 @@ export async function getPostsByType(type: PostType): Promise<Post[]> {
   }
 }
 
-/**
- * Get a single post by slug.
- */
 export async function getPostBySlug(slug: string): Promise<Post | null> {
   const all = await getAllPosts();
   const post = all.find((p) => p.slug === slug);
@@ -59,9 +45,6 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
   return fetchPageById(post.id);
 }
 
-/**
- * Get a single post by Notion page ID.
- */
 export async function getPostById(id: string): Promise<Post | null> {
   return fetchPageById(id);
 }

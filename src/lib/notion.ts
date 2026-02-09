@@ -200,6 +200,10 @@ async function fetchBlockChildren(blockId: string): Promise<NotionBlock[]> {
   return blocks;
 }
 
+export async function fetchPageContent(pageId: string): Promise<NotionBlock[]> {
+  return fetchBlockChildren(pageId);
+}
+
 /* ------------------------------------------------------------------ */
 /* Single page fetch */
 /* ------------------------------------------------------------------ */
