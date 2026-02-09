@@ -3,7 +3,7 @@ import { getFeedPreview } from '@/lib/getFeed';
 import FeedItem from '@/components/FeedItem';
 import BackgroundVideo from '@/components/BackgroundVideo';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'TensorThrottleX',
