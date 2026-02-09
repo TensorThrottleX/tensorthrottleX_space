@@ -1,7 +1,8 @@
 import { getPostsByType } from '@/lib/posts';
 import FeedItem from '@/components/FeedItem';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+
 
 export const metadata = {
   title: 'Experiments | TensorThrottleX',
