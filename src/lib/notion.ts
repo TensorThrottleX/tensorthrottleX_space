@@ -96,15 +96,17 @@ function pageToPost(page: {
   if (!published) return null;
 
   const typeRaw = getSelect(props.Type).toLowerCase();
-  if (!['feed', 'experiment', 'project', 'note'].includes(typeRaw)) {
-    return null;
-  }
+  const type = ['feed', 'experiment', 'project', 'note'].includes(typeRaw)
+    ? (typeRaw as Post['type'])
+    : null;
+
+  if (!type) return null;
 
   return {
     id: page.id,
     title: title || 'Untitled',
     slug,
-    type: typeRaw as Post['type'],
+    type,
     published: true,
     createdAt: page.created_time ?? new Date().toISOString(),
     cover: getCoverUrl(page.cover),
@@ -128,10 +130,8 @@ export async function fetchDatabasePages(
     const { results } = await notion.databases.query({
       database_id: databaseId,
       filter: {
-        and: [
-          { property: 'Published', checkbox: { equals: true } },
-          { property: 'Type', select: { equals: type } },
-        ],
+        property: 'Published',
+        checkbox: { equals: true },
       },
       sorts: [{ timestamp: 'created_time', direction: 'descending' }],
     });
@@ -141,7 +141,7 @@ export async function fetchDatabasePages(
     return results
       .filter(isNotionPage)
       .map(pageToPost)
-      .filter((p): p is Post => Boolean(p));
+      .filter((p): p is Post => Boolean(p) && p.type === type);
   } catch (err) {
     console.error('[NOTION QUERY ERROR]', err);
     return [];
