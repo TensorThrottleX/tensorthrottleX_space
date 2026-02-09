@@ -2,14 +2,19 @@ import { Client } from '@notionhq/client';
 import type { Post, NotionBlock } from '@/types';
 
 /* ------------------------------------------------------------------ */
-/* Notion client setup */
+/* Environment guards (FAIL FAST) */
 /* ------------------------------------------------------------------ */
 
-const token = process.env.NOTION_TOKEN ?? '';
-if (!token) {
-  console.error('[NOTION] Missing NOTION_TOKEN');
+function assertEnv(name: string, value: string) {
+  if (!value) {
+    throw new Error(`[ENV] Missing required variable: ${name}`);
+  }
 }
 
+assertEnv('NOTION_TOKEN', process.env.NOTION_TOKEN ?? '');
+assertEnv('NOTION_FEED_DB_ID', process.env.NOTION_FEED_DB_ID ?? '');
+
+const token = process.env.NOTION_TOKEN as string;
 const notion = new Client({ auth: token });
 
 /* ------------------------------------------------------------------ */
@@ -17,11 +22,7 @@ const notion = new Client({ auth: token });
 /* ------------------------------------------------------------------ */
 
 export function getFeedDbId(): string {
-  const id = process.env.NOTION_FEED_DB_ID ?? '';
-  if (!id) {
-    console.error('[NOTION] Missing NOTION_FEED_DB_ID');
-  }
-  return id;
+  return process.env.NOTION_FEED_DB_ID as string;
 }
 
 export function getDatabaseIds(): Record<string, string> {
@@ -32,6 +33,13 @@ export function getDatabaseIds(): Record<string, string> {
     notes: process.env.NOTION_DATABASE_NOTES ?? '',
   };
 }
+
+/* ------------------------------------------------------------------ */
+/* Constants & types */
+/* ------------------------------------------------------------------ */
+
+const ALLOWED_TYPES = ['feed', 'experiment', 'project', 'note'] as const;
+type AllowedType = typeof ALLOWED_TYPES[number];
 
 /* ------------------------------------------------------------------ */
 /* Type guards & helpers */
@@ -51,6 +59,10 @@ function isNotionPage(
     'id' in page &&
     'properties' in page
   );
+}
+
+function hasRequiredProps(props: Record<string, unknown>): boolean {
+  return Boolean(props.Title && props.Slug && props.Published && props.Type);
 }
 
 function getPlainText(prop: unknown): string {
@@ -77,7 +89,7 @@ function getCoverUrl(cover: unknown): string | null {
 }
 
 /* ------------------------------------------------------------------ */
-/* Page → Post mapper (STRICT) */
+/* Page → Post mapper (STRICT & DEFENSIVE) */
 /* ------------------------------------------------------------------ */
 
 function pageToPost(page: {
@@ -88,42 +100,48 @@ function pageToPost(page: {
 }): Post | null {
   const props = page.properties;
 
-  const title = getPlainText(props.Title);
+  if (!hasRequiredProps(props)) {
+    console.warn('[CMS] Dropped page (missing required properties):', page.id);
+    return null;
+  }
+
   const slug = getPlainText(props.Slug).trim();
-  if (!slug) return null;
+  if (!slug) {
+    console.warn('[CMS] Dropped page (empty slug):', page.id);
+    return null;
+  }
 
-  // HARD GATE 1 — must be explicitly published
-  const published = getCheckbox(props.Published);
-  if (!published) return null;
+  if (!getCheckbox(props.Published)) {
+    return null; // intentional draft
+  }
 
-  // HARD GATE 2 — must have a valid type
   const typeRaw = getSelect(props.Type).toLowerCase();
-  if (!['feed', 'experiment', 'project', 'note'].includes(typeRaw)) {
+  if (!ALLOWED_TYPES.includes(typeRaw as AllowedType)) {
+    console.warn('[CMS] Dropped page (invalid type):', page.id, typeRaw);
     return null;
   }
 
   return {
     id: page.id,
-    title: title || 'Untitled',
+    title: getPlainText(props.Title) || 'Untitled',
     slug,
     type: typeRaw as Post['type'],
     published: true,
     createdAt: page.created_time ?? new Date().toISOString(),
     cover: getCoverUrl(page.cover),
-    content: [], // filled only by fetchPageById
+    content: [], // filled ONLY by fetchPageById
   };
 }
 
-
 /* ------------------------------------------------------------------ */
-/* Database queries */
+/* Database queries (STRICT FILTERING) */
 /* ------------------------------------------------------------------ */
 
 export async function fetchDatabasePages(
   databaseId: string,
   type: Post['type']
 ): Promise<Post[]> {
-  if (!databaseId || !token) return [];
+  if (!databaseId) return [];
 
   try {
     const { results } = await notion.databases.query({
@@ -135,22 +153,23 @@ export async function fetchDatabasePages(
       sorts: [{ timestamp: 'created_time', direction: 'descending' }],
     });
 
-    return results
+    const posts = results
       .filter(isNotionPage)
       .map(pageToPost)
       .filter(
         (post): post is Post =>
           Boolean(post) && post.type === type
       );
+
+    return posts;
   } catch (err) {
     console.error('[NOTION QUERY ERROR]', err);
     return [];
   }
 }
 
-
 /* ------------------------------------------------------------------ */
-/* Block fetching */
+/* Block fetching (internal only) */
 /* ------------------------------------------------------------------ */
 
 async function fetchBlockChildren(blockId: string): Promise<NotionBlock[]> {
@@ -183,7 +202,9 @@ async function fetchBlockChildren(blockId: string): Promise<NotionBlock[]> {
 
         if (b.type === 'image') block.url = b.image?.file?.url ?? b.image?.external?.url;
         if (b.type === 'video') block.url = b.video?.file?.url ?? b.video?.external?.url;
-        if (b.type === 'embed' || b.type === 'bookmark') block.url = b.embed?.url ?? b.bookmark?.url;
+        if (b.type === 'embed' || b.type === 'bookmark') {
+          block.url = b.embed?.url ?? b.bookmark?.url;
+        }
 
         if (b.has_children) {
           block.children = await fetchBlockChildren(b.id);
@@ -201,16 +222,12 @@ async function fetchBlockChildren(blockId: string): Promise<NotionBlock[]> {
   return blocks;
 }
 
-export async function fetchPageContent(pageId: string): Promise<NotionBlock[]> {
-  return fetchBlockChildren(pageId);
-}
-
 /* ------------------------------------------------------------------ */
-/* Single page fetch */
+/* Single page fetch (ONLY place content is loaded) */
 /* ------------------------------------------------------------------ */
 
 export async function fetchPageById(pageId: string): Promise<Post | null> {
-  if (!pageId || !token) return null;
+  if (!pageId) return null;
 
   try {
     const page = await notion.pages.retrieve({ page_id: pageId });
@@ -227,5 +244,8 @@ export async function fetchPageById(pageId: string): Promise<Post | null> {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Public client export */
+/* ------------------------------------------------------------------ */
 
 export { notion };
