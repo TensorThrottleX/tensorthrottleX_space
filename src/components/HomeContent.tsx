@@ -66,7 +66,6 @@ function SectionSignals() {
 }
 
 function SectionThoughts({ posts }: { posts: Post[] }) {
-    // Show only the 3 most recent 'note' or generic posts if no notes
     const notes = posts.filter(p => p.type === 'note').slice(0, 3);
     const displayPosts = notes.length > 0 ? notes : posts.slice(0, 3);
 
@@ -86,7 +85,7 @@ function SectionThoughts({ posts }: { posts: Post[] }) {
                                 {post.title}
                             </h3>
                             <p className="text-sm text-neutral-500 font-mono">
-                                // Read entry
+                                {/* Read entry */}
                             </p>
                         </article>
                     </Link>
@@ -98,7 +97,7 @@ function SectionThoughts({ posts }: { posts: Post[] }) {
                 </Link>
             </div>
         </section>
-    )
+    );
 }
 
 function SectionTransition() {
@@ -109,18 +108,17 @@ function SectionTransition() {
                 SYSTEM FEED INITIALIZED
             </p>
         </section>
-    )
+    );
 }
 
 function SectionFeed({ posts }: { posts: Post[] }) {
-    // Show all posts in the main feed
     return (
         <section className="py-20 px-6 max-w-2xl mx-auto min-h-screen">
             <h2 className="text-xs font-mono text-neutral-600 uppercase tracking-widest mb-12">
                 Chronological Log
             </h2>
             <div className="relative border-l border-neutral-800 ml-3 space-y-12 pb-20">
-                {posts.map((post, i) => (
+                {posts.map((post) => (
                     <motion.article
                         key={post.id}
                         initial={{ opacity: 0, x: -10 }}
@@ -130,12 +128,13 @@ function SectionFeed({ posts }: { posts: Post[] }) {
                         className="pl-8 relative group"
                     >
                         <div className="absolute -left-[5px] top-2 w-2.5 h-2.5 rounded-full bg-neutral-900 border border-neutral-700 group-hover:border-accent group-hover:bg-accent transition-colors" />
-
                         <Link href={`/post/${post.slug}`} className="block group-hover:translate-x-1 transition-transform">
                             <div className="flex items-baseline gap-3 mb-1">
-                                <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border ${post.type === 'experiment' ? 'border-blue-900/50 text-blue-500' :
-                                        post.type === 'project' ? 'border-purple-900/50 text-purple-500' :
-                                            'border-neutral-800 text-neutral-500'
+                                <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border ${post.type === 'experiment'
+                                        ? 'border-blue-900/50 text-blue-500'
+                                        : post.type === 'project'
+                                            ? 'border-purple-900/50 text-purple-500'
+                                            : 'border-neutral-800 text-neutral-500'
                                     }`}>
                                     {post.type}
                                 </span>
@@ -143,14 +142,12 @@ function SectionFeed({ posts }: { posts: Post[] }) {
                                     {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}
                                 </time>
                             </div>
-
                             <h3 className="text-xl font-medium text-neutral-300 group-hover:text-white transition-colors">
                                 {post.title}
                             </h3>
                         </Link>
                     </motion.article>
                 ))}
-
                 <div className="pl-8 pt-8 text-sm text-neutral-600 font-mono">
                     -- End of buffer --
                 </div>
