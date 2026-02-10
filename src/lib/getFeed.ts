@@ -10,3 +10,11 @@ export async function getFeed(): Promise<Post[]> {
 
   return fetchDatabasePages(dbId, 'feed');
 }
+
+/**
+ * Fetch a limited preview of feed posts for the homepage.
+ */
+export async function getFeedPreview(limit: number): Promise<Post[]> {
+  const posts = await getFeed();
+  return posts.slice(0, limit);
+}

@@ -28,16 +28,13 @@ export async function GET() {
         }
 
         /* ------------------------------------------------------------ */
-        /* 2. Notion connectivity                                       */
+        /* 2. Notion client setup                                       */
         /* ------------------------------------------------------------ */
 
         const notion = new Client({ auth: NOTION_TOKEN });
 
-        // Lightweight auth check
-        await notion.users.me();
-
         /* ------------------------------------------------------------ */
-        /* 3. Database query check                                      */
+        /* 3. Database query check (auth + access validation)            */
         /* ------------------------------------------------------------ */
 
         const response = await notion.databases.query({
@@ -88,8 +85,7 @@ export async function GET() {
                 r.properties?.Type?.select?.name?.toLowerCase() ?? 'unknown';
 
             if (type in counts) {
-                // @ts-ignore
-                counts[type]++;
+                counts[type as keyof typeof counts]++;
             } else {
                 counts.unknown++;
             }

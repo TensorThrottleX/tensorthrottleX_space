@@ -1,3 +1,4 @@
+import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints';
 import { Client } from '@notionhq/client';
 import type { Post, NotionBlock } from '@/types';
 
@@ -45,21 +46,16 @@ type AllowedType = typeof ALLOWED_TYPES[number];
 /* Type guards & helpers */
 /* ------------------------------------------------------------------ */
 
-function isNotionPage(
-  page: unknown
-): page is {
-  id: string;
-  properties: Record<string, unknown>;
-  cover: unknown;
-  created_time?: string;
-} {
+function isNotionPage(page: unknown): page is PageObjectResponse {
   return (
     typeof page === 'object' &&
     page !== null &&
-    'id' in page &&
+    'object' in page &&
+    (page as any).object === 'page' &&
     'properties' in page
   );
 }
+
 
 function hasRequiredProps(props: Record<string, unknown>): boolean {
   return Boolean(props.Title && props.Slug && props.Published && props.Type);
@@ -92,12 +88,8 @@ function getCoverUrl(cover: unknown): string | null {
 /* Page → Post mapper (STRICT & DEFENSIVE) */
 /* ------------------------------------------------------------------ */
 
-function pageToPost(page: {
-  id: string;
-  properties: Record<string, unknown>;
-  cover: unknown;
-  created_time?: string;
-}): Post | null {
+function pageToPost(page: PageObjectResponse): Post | null {
+
   const props = page.properties;
 
   if (!hasRequiredProps(props)) {
@@ -156,10 +148,9 @@ export async function fetchDatabasePages(
     const posts = results
       .filter(isNotionPage)
       .map(pageToPost)
-      .filter(
-        (post): post is Post =>
-          Boolean(post) && post.type === type
-      );
+      .filter((post): post is Post => post !== null)
+      .filter((post) => post.type === type);
+
 
     return posts;
   } catch (err) {
@@ -213,7 +204,8 @@ async function fetchBlockChildren(blockId: string): Promise<NotionBlock[]> {
         blocks.push(block);
       }
 
-      cursor = res.has_more ? res.next_cursor : undefined;
+      cursor = res.has_more ? res.next_cursor ?? undefined : undefined;
+
     } while (cursor);
   } catch (err) {
     console.error('[NOTION BLOCK ERROR]', err);
