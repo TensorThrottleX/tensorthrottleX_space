@@ -73,6 +73,10 @@ export default async function PostPage({ params }: Props) {
       )}
 
       <div className="post-body">
+        {(() => {
+          console.log(`[DEBUG] Rendering PostRenderer with ${post.content.length} blocks`);
+          return null;
+        })()}
         <PostRenderer blocks={post.content} />
       </div>
 

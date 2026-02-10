@@ -20,6 +20,7 @@ function RichText({ block }: { block: NotionBlock }) {
 }
 
 function Block({ block }: { block: NotionBlock }) {
+  // console.log(`[DEBUG] Rendering block: ${block.type} (${block.id})`);
   const text = block.plainText ?? block.richText?.map((t) => t.plain_text).join('') ?? '';
 
   switch (block.type) {
@@ -85,6 +86,7 @@ interface PostRendererProps {
 }
 
 export default function PostRenderer({ blocks }: PostRendererProps) {
+  console.log(`[DEBUG] PostRenderer received ${blocks.length} blocks`);
   const listStack: { type: 'ul' | 'ol'; items: NotionBlock[] }[] = [];
   const nodes: React.ReactNode[] = [];
   let i = 0;
