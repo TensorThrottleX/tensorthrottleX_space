@@ -2,16 +2,16 @@ import Link from 'next/link';
 
 export default function NotFound() {
   return (
-    <div className="py-16 text-center">
-      <h1 className="text-lg font-medium text-neutral-900">Page not found</h1>
-      <p className="text-neutral-500 text-sm mt-2 max-w-sm mx-auto">
-        This might have been moved or unpublished. No need to hurry.
+    <div className="py-20 text-center">
+      <h1 className="text-lg font-mono text-neutral-200">Signal lost (404)</h1>
+      <p className="text-neutral-500 font-mono text-xs mt-4 max-w-sm mx-auto uppercase tracking-wide">
+        The requested node does not exist.
       </p>
       <Link
-        href="/feed"
-        className="inline-block mt-8 text-sm text-neutral-600 hover:text-neutral-900 underline transition-colors"
+        href="/"
+        className="inline-block mt-8 text-xs font-mono text-neutral-400 hover:text-white border-b border-transparent hover:border-neutral-500 transition-colors pb-1"
       >
-        Back to feed
+        return_to_feed
       </Link>
     </div>
   );

@@ -73,20 +73,23 @@ export async function GET() {
 
         const counts = {
             total: response.results.length,
-            feed: 0,
-            experiment: 0,
+            post: 0,
             project: 0,
+            research: 0,
             note: 0,
+            status: 0,
+            system: 0,
             unknown: 0,
         };
 
-        for (const r of response.results as any[]) {
-            const type =
-                r.properties?.Type?.select?.name?.toLowerCase() ?? 'unknown';
+        for (const r of (response.results as any[])) {
+            const type = r.properties?.Type?.select?.name?.toLowerCase() ?? 'unknown';
 
             if (type in counts) {
-                counts[type as keyof typeof counts]++;
+                // @ts-ignore - dynamic key access
+                counts[type]++;
             } else {
+                // @ts-ignore
                 counts.unknown++;
             }
         }

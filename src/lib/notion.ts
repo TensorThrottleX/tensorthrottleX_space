@@ -39,7 +39,7 @@ export function getDatabaseIds(): Record<string, string> {
 /* Constants & types */
 /* ------------------------------------------------------------------ */
 
-const ALLOWED_TYPES = ['feed', 'experiment', 'project', 'note'] as const;
+const ALLOWED_TYPES = ['post', 'project', 'research', 'comment', 'status', 'note', 'system'] as const;
 type AllowedType = typeof ALLOWED_TYPES[number];
 
 /* ------------------------------------------------------------------ */
@@ -163,10 +163,6 @@ export async function fetchDatabasePages(
 /* Block fetching (internal only) */
 /* ------------------------------------------------------------------ */
 
-/* ------------------------------------------------------------------ */
-/* Block fetching (internal only) */
-/* ------------------------------------------------------------------ */
-
 async function fetchBlockChildren(blockId: string): Promise<NotionBlock[]> {
   const blocks: NotionBlock[] = [];
   let cursor: string | undefined;
@@ -254,7 +250,74 @@ export async function fetchPageById(pageId: string): Promise<Post | null> {
 }
 
 /* ------------------------------------------------------------------ */
+/* Write operations */
+/* ------------------------------------------------------------------ */
+
+export async function createComment(
+  parentSlug: string,
+  content: string
+): Promise<boolean> {
+  const dbId = getFeedDbId();
+  if (!dbId) return false;
+
+  const titlePreview = content.length > 50 ? `${content.slice(0, 50)}...` : content;
+
+  try {
+    await notion.pages.create({
+      parent: { database_id: dbId },
+      properties: {
+        Title: {
+          title: [
+            {
+              text: {
+                content: titlePreview,
+              },
+            },
+          ],
+        },
+        Slug: {
+          rich_text: [
+            {
+              text: {
+                content: `comment-${Date.now()}`,
+              },
+            },
+          ],
+        },
+        Type: {
+          select: {
+            name: 'Comment',
+          },
+        },
+        Published: {
+          checkbox: false, // Moderation queue (shadow ban/review)
+        },
+      },
+      children: [
+        {
+          object: 'block',
+          type: 'paragraph',
+          paragraph: {
+            rich_text: [
+              {
+                text: {
+                  content: `Ref: ${parentSlug}\n\n${content}`,
+                },
+              },
+            ],
+          },
+        },
+      ],
+    });
+    return true;
+  } catch (err) {
+    console.error('[NOTION CREATE COMMENT ERROR]', err);
+    return false;
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Public client export */
 /* ------------------------------------------------------------------ */
 
-export { notion };
+export { notion };  

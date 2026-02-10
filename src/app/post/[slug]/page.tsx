@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import type { Metadata } from 'next';
-import { getPostBySlug } from '@/lib/posts';
+import { getPostBySlug } from '@/lib/getFeed';
 import PostRenderer from '@/components/PostRenderer';
 import ScrollProgress from '@/components/ScrollProgress';
+import CommentForm from '@/components/CommentForm';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -81,9 +82,7 @@ export default async function PostPage({ params }: Props) {
       </div>
 
       <footer className="mt-12 pt-8 border-t border-[var(--border)]">
-        <div className="text-sm text-neutral-400">
-          Comments — placeholder (future-ready)
-        </div>
+        <CommentForm slug={slug} />
       </footer>
     </article>
   );

@@ -3,19 +3,15 @@
 import { useMemo, useState, useEffect } from 'react';
 import FeedItem from '@/components/FeedItem';
 import { useKeyboardNav } from '@/hooks/useKeyboardNav';
-import type { Post, PostType } from '@/types';
+import type { Post } from '@/types';
 
-const TYPE_OPTIONS: { value: 'all' | PostType; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'feed', label: 'Feed' },
-  { value: 'experiment', label: 'Experiment' },
-  { value: 'project', label: 'Project' },
-  { value: 'note', label: 'Note' },
-];
+type Section = 'feed' | 'projects' | 'research' | 'logs';
 
-const TIME_OPTIONS: { value: 'latest' | 'older'; label: string }[] = [
-  { value: 'latest', label: 'Latest' },
-  { value: 'older', label: 'Older' },
+const SECTIONS: { id: Section; label: string }[] = [
+  { id: 'feed', label: 'Feed' },
+  { id: 'projects', label: 'Projects' },
+  { id: 'research', label: 'Research' },
+  { id: 'logs', label: 'Logs' },
 ];
 
 interface FeedWithFiltersProps {
@@ -24,18 +20,27 @@ interface FeedWithFiltersProps {
 }
 
 export default function FeedWithFilters({ posts, emptyMessage }: FeedWithFiltersProps) {
-  const [typeFilter, setTypeFilter] = useState<'all' | PostType>('all');
-  const [timeOrder, setTimeOrder] = useState<'latest' | 'older'>('latest');
+  const [activeSection, setActiveSection] = useState<Section>('feed');
 
+  // Filter logic based on sections
   const filtered = useMemo(() => {
-    let list = typeFilter === 'all' ? posts : posts.filter((p) => p.type === typeFilter);
-    list = [...list].sort((a, b) => {
-      const tA = new Date(a.createdAt).getTime();
-      const tB = new Date(b.createdAt).getTime();
-      return timeOrder === 'latest' ? tB - tA : tA - tB;
-    });
-    return list;
-  }, [posts, typeFilter, timeOrder]);
+    let list = posts;
+
+    if (activeSection === 'projects') {
+      list = posts.filter(p => p.type === 'project');
+    } else if (activeSection === 'research') {
+      list = posts.filter(p => p.type === 'research');
+    } else if (activeSection === 'logs') {
+      // Logs includes notes, status, system
+      list = posts.filter(p => ['note', 'status', 'system', 'comment'].includes(p.type));
+    }
+    // 'feed' includes everything (unfiltered)
+
+    // Always chronological (newest first)
+    return [...list].sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [posts, activeSection]);
 
   const activeIndex = useKeyboardNav(filtered.length);
 
@@ -52,53 +57,78 @@ export default function FeedWithFilters({ posts, emptyMessage }: FeedWithFilters
   if (posts.length === 0) {
     return (
       <div className="py-14 text-center">
-        <p className="text-neutral-500 text-sm">{emptyMessage ?? 'Nothing here yet.'}</p>
-        <p className="text-neutral-400 text-xs mt-2">Publish from Notion with Published ✓</p>
+        <p className="text-neutral-500 text-sm font-mono">{emptyMessage ?? 'System idle.'}</p>
       </div>
     );
   }
 
   return (
-    <section>
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <span className="text-xs text-neutral-400 uppercase tracking-wide mr-1">Type</span>
-        {TYPE_OPTIONS.map((opt) => (
+    <section className="relative min-h-screen">
+      {/* Sticky Section Selector */}
+      <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-neutral-900 mb-8 -mx-6 px-6 py-4 flex items-center gap-6">
+        {SECTIONS.map((section) => (
           <button
-            key={opt.value}
-            type="button"
-            onClick={() => setTypeFilter(opt.value)}
-            className={`text-xs px-2.5 py-1.5 rounded-md transition-colors ${typeFilter === opt.value
-                ? 'bg-neutral-900 text-white'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+            key={section.id}
+            onClick={() => setActiveSection(section.id)}
+            className={`text-sm font-mono tracking-wide transition-colors ${activeSection === section.id
+              ? 'text-white font-medium'
+              : 'text-neutral-500 hover:text-neutral-300'
               }`}
           >
-            {opt.label}
-          </button>
-        ))}
-        <span className="text-xs text-neutral-400 uppercase tracking-wide ml-2 mr-1">Time</span>
-        {TIME_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => setTimeOrder(opt.value)}
-            className={`text-xs px-2.5 py-1.5 rounded-md transition-colors ${timeOrder === opt.value
-                ? 'bg-neutral-900 text-white'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-              }`}
-          >
-            {opt.label}
+            {section.label}
           </button>
         ))}
       </div>
-      <ul className="space-y-0">
-        {filtered.map((post, i) => (
-          <li key={post.id}>
-            <FeedItem post={post} index={i} id={`feed-item-${i}`} />
-          </li>
-        ))}
+
+      {/* Feed Content */}
+      <ul className="space-y-12 pb-20 relative border-l border-neutral-900 ml-3 pl-8 min-h-[50vh]">
+        {filtered.map((post, i) => {
+          const prev = filtered[i - 1];
+          // Calculate days difference (if prev exists)
+          const diff = prev
+            ? (new Date(prev.createdAt).getTime() - new Date(post.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+            : 0;
+          const daysSince = Math.floor(diff);
+
+          return (
+            <div key={post.id} className="contents">
+              {daysSince > 14 && (
+                <li className="relative py-4">
+                  <span className="absolute -left-[37px] top-6 w-1.5 h-1.5 bg-neutral-900 rounded-full" />
+                  <p className="text-[10px] font-mono text-neutral-800 uppercase tracking-widest pl-1">
+                    ... {daysSince} days of silence ...
+                  </p>
+                </li>
+              )}
+              <li className="relative group">
+                {/* Timeline node */}
+                <span
+                  className={`absolute -left-[37px] top-1.5 w-1.5 h-1.5 rounded-full ring-4 ring-black/50 transition-colors ${post.type === 'system'
+                    ? 'bg-red-900/40 ring-red-900/10'
+                    : 'bg-neutral-800 group-hover:bg-neutral-500'
+                    }`}
+                />
+                <FeedItem post={post} index={i} id={`feed-item-${i}`} />
+              </li>
+            </div>
+          );
+        })}
+
+        {/* End of feed signal */}
+        <li className="relative pt-12">
+          <span className="absolute -left-[37px] top-[54px] w-1.5 h-1.5 bg-emerald-900/50 rounded-full animate-pulse" />
+          <p className="text-[10px] font-mono text-neutral-800 uppercase tracking-widest">
+            System monitoring active
+          </p>
+        </li>
       </ul>
+
       {filtered.length === 0 && (
-        <p className="text-neutral-500 text-sm py-8">No posts match this filter.</p>
+        <div className="py-20 text-center">
+          <p className="text-neutral-600 font-mono text-xs uppercase tracking-widest">
+            No signals detected in {activeSection}
+          </p>
+        </div>
       )}
     </section>
   );

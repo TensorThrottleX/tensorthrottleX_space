@@ -2,7 +2,7 @@
  * Normalized post type used across the app.
  * All Notion content is mapped to this shape.
  */
-export type PostType = 'feed' | 'experiment' | 'project' | 'note';
+export type PostType = 'post' | 'project' | 'research' | 'comment' | 'status' | 'note' | 'system';
 
 export interface Post {
   id: string;
