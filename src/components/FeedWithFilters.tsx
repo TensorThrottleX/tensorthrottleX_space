@@ -14,6 +14,12 @@ const SECTIONS: { id: Section; label: string }[] = [
   { id: 'logs', label: 'Logs' },
 ];
 
+function getDaysAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  return `${days} days`;
+}
+
 interface FeedWithFiltersProps {
   posts: Post[];
   emptyMessage?: string;
@@ -64,6 +70,9 @@ export default function FeedWithFilters({ posts, emptyMessage }: FeedWithFilters
 
   return (
     <section className="relative min-h-screen">
+      {/* Feed Spine Indicator */}
+      <div className="fixed left-8 top-20 bottom-0 w-[2px] bg-neutral-700 opacity-40"></div>
+
       {/* Sticky Section Selector */}
       <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-neutral-900 mb-8 -mx-6 px-6 py-4 flex items-center gap-6">
         {SECTIONS.map((section) => (
@@ -78,6 +87,11 @@ export default function FeedWithFilters({ posts, emptyMessage }: FeedWithFilters
             {section.label}
           </button>
         ))}
+      </div>
+
+      {/* Feed Header / Threshold Indicator */}
+      <div className="sticky top-20 px-8 text-xs uppercase text-neutral-600 font-bold tracking-wider mb-8 z-30 mix-blend-difference">
+        Feed Stream ▼
       </div>
 
       {/* Feed Content */}
@@ -117,9 +131,13 @@ export default function FeedWithFilters({ posts, emptyMessage }: FeedWithFilters
         {/* End of feed signal */}
         <li className="relative pt-12">
           <span className="absolute -left-[37px] top-[54px] w-1.5 h-1.5 bg-emerald-900/50 rounded-full animate-pulse" />
-          <p className="text-[10px] font-mono text-neutral-800 uppercase tracking-widest">
-            System monitoring active
-          </p>
+          <div className="mt-8 px-8 text-sm text-neutral-500 font-mono flex items-center gap-2">
+            <span className="text-green-400">[SYSTEM]</span>
+            <span>{filtered.length > 0 ? getDaysAgo(filtered[0].createdAt) : '0 days'} ago</span>
+          </div>
+          <div className="px-8 text-neutral-400 font-mono text-base">
+            System idle. Monitoring only.
+          </div>
         </li>
       </ul>
 
