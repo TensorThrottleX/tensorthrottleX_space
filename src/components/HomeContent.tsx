@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Post } from '@/types';
 
-// Hardcoded signals for "Currently Working On"
+
 const SIGNALS = [
     'Experiment: Real-time inference pipeline optimization',
     'System: CMS failure detection protocols',
@@ -131,10 +131,10 @@ function SectionFeed({ posts }: { posts: Post[] }) {
                         <Link href={`/post/${post.slug}`} className="block group-hover:translate-x-1 transition-transform">
                             <div className="flex items-baseline gap-3 mb-1">
                                 <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border ${post.type === 'experiment'
-                                        ? 'border-blue-900/50 text-blue-500'
-                                        : post.type === 'project'
-                                            ? 'border-purple-900/50 text-purple-500'
-                                            : 'border-neutral-800 text-neutral-500'
+                                    ? 'border-blue-900/50 text-blue-500'
+                                    : post.type === 'project'
+                                        ? 'border-purple-900/50 text-purple-500'
+                                        : 'border-neutral-800 text-neutral-500'
                                     }`}>
                                     {post.type}
                                 </span>
