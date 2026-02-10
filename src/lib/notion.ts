@@ -131,7 +131,7 @@ function pageToPost(page: PageObjectResponse): Post | null {
 
 export async function fetchDatabasePages(
   databaseId: string,
-  type: Post['type']
+  type?: Post['type']
 ): Promise<Post[]> {
   if (!databaseId) return [];
 
@@ -149,7 +149,7 @@ export async function fetchDatabasePages(
       .filter(isNotionPage)
       .map(pageToPost)
       .filter((post): post is Post => post !== null)
-      .filter((post) => post.type === type);
+      .filter((post) => !type || post.type === type);
 
 
     return posts;

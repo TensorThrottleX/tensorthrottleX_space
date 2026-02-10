@@ -12,17 +12,21 @@ export default async function FeedPage() {
   const posts = await fetchDatabasePages(getFeedDbId(), 'feed');
 
   return (
-    <div>
-      <div className="mb-10 py-6 border-b border-[var(--border)]">
-        <h1 className="text-xl font-medium text-neutral-900 mb-1">Feed</h1>
-        <p className="text-sm text-neutral-500">
-          Filter by type or order. No extra load.
+    <div className="relative">
+      {/* Header */}
+      <div className="mb-10 pb-6 border-b border-neutral-800">
+        <h1 className="text-xl font-medium text-neutral-100 mb-1">
+          Feed
+        </h1>
+        <p className="text-sm text-neutral-400">
+          Raw system output. Chronological. No noise.
         </p>
       </div>
 
+      {/* Feed */}
       <FeedWithFilters
         posts={posts}
-        emptyMessage="No posts yet. Content comes from Notion."
+        emptyMessage="No signals yet. Waiting for input."
       />
     </div>
   );

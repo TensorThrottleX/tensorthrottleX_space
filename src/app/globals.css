@@ -3,17 +3,19 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
-  --muted: #737373;
-  --border: #e5e5e5;
-  --sidebar-width: 12rem;
+  --background: #050505;
+  --foreground: #e5e5e5;
+  --muted: #404040;
+  --border: #262626;
+  --sidebar-width: 0rem;
+  --accent: #22c55e; 
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-feature-settings: "rlig" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
 }
 
 @layer utilities {
@@ -22,25 +24,51 @@ body {
   }
 }
 
-/* Long-form post body: readable line length and spacing */
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Typography Overrides */
+h1, h2, h3, h4, h5, h6 {
+  @apply tracking-tight text-white;
+}
+
+/* Long-form post styling adjustment for dark mode */
 .post-body {
-  @apply max-w-none;
+  @apply max-w-none text-neutral-300;
 }
 .post-body p {
-  @apply text-[1.0625rem] leading-[1.7] text-neutral-700 mb-5;
+  @apply text-[1.0625rem] leading-[1.7] text-neutral-400 mb-6;
 }
 .post-body h1, .post-body h2, .post-body h3 {
-  @apply text-neutral-900 font-semibold mt-10 mb-3 first:mt-0;
+  @apply text-white font-medium mt-12 mb-4 first:mt-0;
 }
 .post-body ul, .post-body ol {
-  @apply my-5 pl-6 space-y-1;
+  @apply my-6 pl-0; 
+}
+.post-body li {
+    @apply flex gap-3 text-neutral-400 mb-2 before:content-['-'] before:text-neutral-600;
 }
 .post-body figure {
-  @apply my-8 mx-auto max-w-full;
+  @apply my-10 mx-auto max-w-full;
 }
 .post-body figure img, .post-body figure video {
-  @apply w-full h-auto rounded-lg;
+  @apply w-full h-auto rounded bg-neutral-900 border border-neutral-800;
 }
 .post-body a {
-  @apply text-neutral-600 underline hover:text-neutral-900;
+  @apply text-neutral-200 decoration-neutral-700 underline underline-offset-4 hover:decoration-white transition-all;
+}
+.post-body code {
+    @apply bg-neutral-900 px-1.5 py-0.5 rounded text-sm font-mono text-neutral-300 border border-neutral-800;
 }
