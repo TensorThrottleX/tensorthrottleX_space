@@ -85,7 +85,7 @@ function SectionThoughts({ posts }: { posts: Post[] }) {
                                 {post.title}
                             </h3>
                             <p className="text-sm text-neutral-500 font-mono">
-                                {/* Read entry */}
+                                Read entry
                             </p>
                         </article>
                     </Link>

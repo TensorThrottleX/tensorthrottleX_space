@@ -163,81 +163,52 @@ export async function fetchDatabasePages(
 /* Block fetching (internal only) */
 /* ------------------------------------------------------------------ */
 
-async function fetchBlockChildren(blockId: string): Promise<NotionBlock[]> {
-  const blocks: NotionBlock[] = [];
-  let cursor: string | undefined;
+// ... (inside fetchBlockChildren)
+try {
+  console.log(`[DEBUG] Fetching blocks for blockId: ${blockId}`);
+  do {
+    const res = await notion.blocks.children.list({
+      block_id: blockId,
+      start_cursor: cursor,
+      page_size: 100,
+    });
 
-  try {
-    do {
-      const res = await notion.blocks.children.list({
-        block_id: blockId,
-        start_cursor: cursor,
-        page_size: 100,
-      });
+    console.log(`[DEBUG] Fetched ${res.results.length} blocks for ${blockId}`);
 
-      for (const b of res.results as any[]) {
-        const richText =
-          b.paragraph?.rich_text ??
-          b.heading_1?.rich_text ??
-          b.heading_2?.rich_text ??
-          b.heading_3?.rich_text ??
-          b.bulleted_list_item?.rich_text ??
-          b.numbered_list_item?.rich_text;
+    for (const b of res.results as any[]) {
+      // ...
 
-        const block: NotionBlock = {
-          id: b.id,
-          type: b.type,
-          plainText: richText?.map((t: any) => t.plain_text).join(''),
-          richText,
-        };
+      // ... (inside fetchPageById)
+      export async function fetchPageById(pageId: string): Promise<Post | null> {
+        if (!pageId) return null;
 
-        if (b.type === 'image') block.url = b.image?.file?.url ?? b.image?.external?.url;
-        if (b.type === 'video') block.url = b.video?.file?.url ?? b.video?.external?.url;
-        if (b.type === 'embed' || b.type === 'bookmark') {
-          block.url = b.embed?.url ?? b.bookmark?.url;
+        try {
+          console.log(`[DEBUG] Fetching page by ID: ${pageId}`);
+          const page = await notion.pages.retrieve({ page_id: pageId });
+          if (!isNotionPage(page)) {
+            console.warn(`[DEBUG] Page ${pageId} is not a valid Notion page object`);
+            return null;
+          }
+
+          const post = pageToPost(page);
+          if (!post) {
+            console.warn(`[DEBUG] Page ${pageId} failed to map to Post`);
+            return null;
+          }
+
+          console.log(`[DEBUG] Page mapped to Post: ${post.slug}. Fetching content...`);
+          post.content = await fetchBlockChildren(pageId);
+          console.log(`[DEBUG] Attached ${post.content.length} blocks to post ${post.slug}`);
+
+          return post;
+        } catch (err) {
+          console.error('[NOTION PAGE ERROR]', err);
+          return null;
         }
-
-        if (b.has_children) {
-          block.children = await fetchBlockChildren(b.id);
-        }
-
-        blocks.push(block);
       }
 
-      cursor = res.has_more ? res.next_cursor ?? undefined : undefined;
+      /* ------------------------------------------------------------------ */
+      /* Public client export */
+      /* ------------------------------------------------------------------ */
 
-    } while (cursor);
-  } catch (err) {
-    console.error('[NOTION BLOCK ERROR]', err);
-  }
-
-  return blocks;
-}
-
-/* ------------------------------------------------------------------ */
-/* Single page fetch (ONLY place content is loaded) */
-/* ------------------------------------------------------------------ */
-
-export async function fetchPageById(pageId: string): Promise<Post | null> {
-  if (!pageId) return null;
-
-  try {
-    const page = await notion.pages.retrieve({ page_id: pageId });
-    if (!isNotionPage(page)) return null;
-
-    const post = pageToPost(page);
-    if (!post) return null;
-
-    post.content = await fetchBlockChildren(pageId);
-    return post;
-  } catch (err) {
-    console.error('[NOTION PAGE ERROR]', err);
-    return null;
-  }
-}
-
-/* ------------------------------------------------------------------ */
-/* Public client export */
-/* ------------------------------------------------------------------ */
-
-export { notion };
+      export { notion };

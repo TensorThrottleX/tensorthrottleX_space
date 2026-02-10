@@ -49,9 +49,9 @@ export default async function PostPage({ params }: Props) {
   return (
     <article className="pb-16">
       <ScrollProgress />
-      <header className="sticky top-0 z-10 -mx-6 bg-white/95 backdrop-blur-sm px-6 py-4 border-b border-[var(--border)] mb-8">
+      <header className="sticky top-14 z-10 -mx-6 bg-[#050505]/95 backdrop-blur-sm px-6 py-4 border-b border-[var(--border)] mb-8">
         <span className="text-xs text-neutral-400 uppercase tracking-wide">{post.type}</span>
-        <h1 className="text-xl font-semibold text-neutral-900 mt-1 truncate max-w-full">
+        <h1 className="text-xl font-semibold text-neutral-100 mt-1 truncate max-w-full">
           {post.title}
         </h1>
         <time className="text-sm text-neutral-500 mt-1 block" dateTime={post.createdAt}>

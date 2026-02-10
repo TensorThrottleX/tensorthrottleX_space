@@ -13,7 +13,7 @@ export default async function ProjectsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-medium text-neutral-900 mb-2">Projects</h1>
+      <h1 className="text-xl font-medium text-neutral-100 mb-2">Projects</h1>
       <p className="text-sm text-neutral-500 mb-8">Curated work.</p>
       <section className="space-y-0">
         {posts.length === 0 ? (
